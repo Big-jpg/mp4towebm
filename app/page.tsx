@@ -1,4 +1,6 @@
 import VideoConverter from '@/app/components/VideoConverter';
+import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/react"
 
 export default function Home() {
   return (
@@ -8,6 +10,8 @@ export default function Home() {
         <p className="text-center mb-8">Convert between MP4 and WebM formats quickly and easily</p>
         
         <VideoConverter />
+        < Analytics/>
+        < SpeedInsights/>
       </div>
     </main>
   );
