@@ -9,6 +9,13 @@ const ffmpeg = createFFmpeg({
     corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js'
 });
 
+// Use older version of FFMPEG, which is single threaded but doesn't required shader array buffers
+// const ffmpeg = createFFmpeg({
+//     log: true,
+//     corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js'
+//   });
+
+
 let ffmpegLoaded = false;
 
 export default function VideoConverter() {
