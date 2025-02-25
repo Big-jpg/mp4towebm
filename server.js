@@ -10,7 +10,7 @@ app.prepare().then(() => {
     createServer((req, res) => {
         const parsedUrl = parse(req.url, true);
 
-        // Add required headers for SharedArrayBuffer
+        // Add required headers for SharedArrayBuffer 
         res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
         res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
 

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
-// Initialize FFmpeg - this only defines it, doesn't load it yet
+// Initialize FFmpeg - this only defines it, doesn't load it yet 
 const ffmpeg = createFFmpeg({
     log: true,
     corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js'
