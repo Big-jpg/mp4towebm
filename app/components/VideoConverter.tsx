@@ -5,7 +5,7 @@ import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
 const ffmpeg = createFFmpeg({
     log: true,
-    corePath: 'https://unpkg.com/@ffmpeg/core-mt@0.12.10/dist/ffmpeg-core.js',
+    corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.9/dist/esm/ffmpeg-core.js',
 });
 
 let ffmpegLoaded = false;
