@@ -67,99 +67,96 @@ export default function VideoConverter() {
             setProgress(0);
             setError('');
 
+            // Load FFmpeg if not already loaded
             if (!ffmpegLoaded) {
                 setIsLoading(true);
+
+                // Add logger for debug output
+                ffmpeg.setLogger(({ type, message }) => {
+                    console.log(`[FFmpeg ${type}] ${message}`);
+                });
+
                 await ffmpeg.load();
                 ffmpegLoaded = true;
                 setIsLoading(false);
+                console.log("✅ FFmpeg loaded");
             }
 
-            const fileExt = inputFile.name.split('.').pop()?.toLowerCase();
-            const fileName = inputFile.name.replace(`.${fileExt}`, '');
+            const fileExt = inputFile.name.split('.').pop()?.toLowerCase() || 'mp4';
+            const fileName = inputFile.name.replace(`.${fileExt}`, '').replace(/\s+/g, '_');
+
             const inputFileName = `input.${fileExt}`;
             const outputFileName = `${fileName}.${outputFormat}`;
 
-            ffmpeg.FS('writeFile', inputFileName, await fetchFile(inputFile));
+            // Write file into FFmpeg FS
+            const data = await fetchFile(inputFile);
+            ffmpeg.FS('writeFile', inputFileName, data);
+            console.log(`✅ File written to FS as ${inputFileName}`);
 
-            const args: string[] = [];
+            // Build args
+            let args: string[] = outputFormat === 'webm'
+                ? ['-i', inputFileName, '-c:v', 'vp8']
+                : ['-i', inputFileName, '-c:v', 'h264'];
 
-            if (outputFormat === 'webm') {
-                args.push('-i', inputFileName, '-c:v', 'vp8');
-                if (includeAudio) {
-                    args.push('-c:a', 'libvorbis');
-                } else {
-                    args.push('-an');
-                }
-
-                switch (optimizationOption) {
-                    case 'fps':
-                        args.push('-r', '15', '-crf', '30', '-b:v', '0');
-                        break;
-                    case 'length':
-                        args.push('-t', '30', '-crf', '30', '-b:v', '0');
-                        break;
-                    case 'quality':
-                        args.push('-crf', '40', '-b:v', '0');
-                        break;
-                    case 'size':
-                        args.push('-crf', '40', '-b:v', '0', '-r', '15');
-                        if (includeAudio) {
-                            args.push('-b:a', '64k');
-                        }
-                        break;
-                    default:
-                        args.push('-crf', '30', '-b:v', '0');
-                }
+            if (includeAudio) {
+                args.push('-c:a', outputFormat === 'webm' ? 'libvorbis' : 'aac');
             } else {
-                args.push('-i', inputFileName, '-c:v', 'h264');
-                if (includeAudio) {
-                    args.push('-c:a', 'aac');
-                } else {
-                    args.push('-an');
-                }
+                args.push('-an');
+            }
 
-                switch (optimizationOption) {
-                    case 'fps':
-                        args.push('-r', '15', '-crf', '23', '-preset', 'fast');
-                        break;
-                    case 'length':
-                        args.push('-t', '30', '-crf', '23', '-preset', 'fast');
-                        break;
-                    case 'quality':
-                        args.push('-crf', '35', '-preset', 'fast');
-                        break;
-                    case 'size':
-                        args.push('-crf', '35', '-preset', 'fast', '-r', '15');
-                        if (includeAudio) {
-                            args.push('-b:a', '64k');
-                        }
-                        break;
-                    default:
-                        args.push('-crf', '23', '-preset', 'fast');
-                }
+            switch (optimizationOption) {
+                case 'fps':
+                    args.push('-r', '15');
+                    break;
+                case 'length':
+                    args.push('-t', '30');
+                    break;
+                case 'quality':
+                    args.push('-crf', outputFormat === 'webm' ? '40' : '35');
+                    break;
+                case 'size':
+                    args.push('-crf', outputFormat === 'webm' ? '40' : '35', '-r', '15');
+                    if (includeAudio) args.push('-b:a', '64k');
+                    break;
+                default:
+                    args.push('-crf', outputFormat === 'webm' ? '30' : '23');
+            }
+
+            if (outputFormat === 'mp4') {
+                args.push('-preset', 'fast');
+            } else {
+                args.push('-b:v', '0'); // VP8/VP9 specific
             }
 
             args.push(outputFileName);
+            console.log('🛠️ FFmpeg args:', args);
 
             ffmpeg.setProgress(({ ratio }) => {
                 setProgress(Math.round(ratio * 100));
             });
 
             await ffmpeg.run(...args);
+            console.log('✅ FFmpeg run completed');
 
-            const data = ffmpeg.FS('readFile', outputFileName);
-            const blob = new Blob([new Uint8Array(data.buffer)], { type: `video/${outputFormat}` });
+            const outputData = ffmpeg.FS('readFile', outputFileName);
+            console.log('📦 Output file size:', outputData.length);
+
+            const buffer = outputData.buffer instanceof ArrayBuffer ? outputData.buffer : outputData.buffer;
+            const blob = new Blob([outputData.buffer as ArrayBuffer], {
+                type: `video/${outputFormat}`,
+            });
             const url = URL.createObjectURL(blob);
 
             setOutputUrl(url);
             setProgress(100);
-        } catch (err) {
-            console.error('Conversion error:', err);
-            setError('An error occurred during conversion. Please try again.');
+        } catch (err: any) {
+            console.error('🚨 Conversion error:', err);
+            setError('An error occurred during conversion. Check console logs for details.');
         } finally {
             setIsConverting(false);
         }
     };
+
 
     const resetForm = () => {
         setInputFile(null);

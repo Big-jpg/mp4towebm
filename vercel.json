@@ -12,6 +12,24 @@
                     "value": "same-origin"
                 }
             ]
+        },
+        {
+            "source": "/ffmpeg-core/(.*).wasm",
+            "headers": [
+                {
+                    "key": "Content-Type",
+                    "value": "application/wasm"
+                }
+            ]
+        },
+        {
+            "source": "/ffmpeg-core/(.*).worker.js",
+            "headers": [
+                {
+                    "key": "Content-Type",
+                    "value": "application/javascript"
+                }
+            ]
         }
     ]
 }
