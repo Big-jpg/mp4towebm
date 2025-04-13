@@ -1,27 +1,6 @@
 {
     "headers": [
         {
-            "source": "/umd/(.*\\.wasm)",
-            "headers": [
-                {
-                    "key": "Content-Encoding",
-                    "value": ""
-                },
-                {
-                    "key": "Content-Type",
-                    "value": "application/wasm"
-                },
-                {
-                    "key": "Cross-Origin-Embedder-Policy",
-                    "value": "require-corp"
-                },
-                {
-                    "key": "Cross-Origin-Opener-Policy",
-                    "value": "same-origin"
-                }
-            ]
-        },
-        {
             "source": "/umd/(.*)",
             "headers": [
                 {
@@ -31,6 +10,14 @@
                 {
                     "key": "Cross-Origin-Opener-Policy",
                     "value": "same-origin"
+                },
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                },
+                {
+                    "key": "Content-Encoding",
+                    "value": "identity"
                 }
             ]
         }
