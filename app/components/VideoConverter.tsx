@@ -94,7 +94,7 @@ export default function VideoConverter() {
             console.log(`✅ File written to FS as ${inputFileName}`);
 
             // Build args
-            let args: string[] = outputFormat === 'webm'
+            const args: string[] = outputFormat === 'webm'
                 ? ['-i', inputFileName, '-c:v', 'vp8']
                 : ['-i', inputFileName, '-c:v', 'h264'];
 
@@ -141,7 +141,6 @@ export default function VideoConverter() {
             const outputData = ffmpeg.FS('readFile', outputFileName);
             console.log('📦 Output file size:', outputData.length);
 
-            const buffer = outputData.buffer instanceof ArrayBuffer ? outputData.buffer : outputData.buffer;
             const blob = new Blob([outputData.buffer as ArrayBuffer], {
                 type: `video/${outputFormat}`,
             });
@@ -149,9 +148,14 @@ export default function VideoConverter() {
 
             setOutputUrl(url);
             setProgress(100);
-        } catch (err: any) {
-            console.error('🚨 Conversion error:', err);
-            setError('An error occurred during conversion. Check console logs for details.');
+        } catch (err) {
+            if (err instanceof Error) {
+                console.error('Conversion error:', err.message);
+                setError(err.message);
+            } else {
+                console.error('Unknown error during conversion.');
+                setError('An unknown error occurred during conversion.');
+            }
         } finally {
             setIsConverting(false);
         }
