@@ -1,7 +1,7 @@
 {
     "headers": [
         {
-            "source": "/ffmpeg-core/(.*)",
+            "source": "/(esm|umd)/(.*)",
             "headers": [
                 {
                     "key": "Cross-Origin-Embedder-Policy",

@@ -5,7 +5,7 @@ import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
 const ffmpeg = createFFmpeg({
     log: true,
-    corePath: '/esm/ffmpeg-core.js',
+    corePath: '/umd/ffmpeg-core.js',
 });
 
 let ffmpegLoaded = false;
@@ -72,7 +72,7 @@ export default function VideoConverter() {
                 setIsLoading(true);
 
                 // Add logger for debug output
-                ffmpeg.setLogger(({ type, message }) => {
+                ffmpeg.setLogger(({ type, message }: { type: string; message: string }) => {
                     console.log(`[FFmpeg ${type}] ${message}`);
                 });
 
