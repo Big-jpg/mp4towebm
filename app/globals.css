@@ -19,3 +19,20 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@media only screen and (max-width: 480px) {
+  .mobile-padding {
+    padding: 20px !important;
+    font-size: 11pt !important;
+  }
+}
+
+.desktop-style {
+  padding: 10px;
+  font-size: 10pt;
+}
+
+.mobile-style {
+  padding: 20px;
+  font-size: 11pt;
+}
