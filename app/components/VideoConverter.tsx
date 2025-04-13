@@ -3,13 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
-const supportsSAB = typeof window !== 'undefined' && typeof SharedArrayBuffer !== 'undefined';
-
 const ffmpeg = createFFmpeg({
     log: true,
-    corePath: supportsSAB
-        ? 'https://unpkg.com/@ffmpeg/core-mt@0.11.1/dist/ffmpeg-core.js'
-        : 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
+    corePath: 'https://unpkg.com/@ffmpeg/core-mt@0.11.1/dist/ffmpeg-core.js',
 });
 
 let ffmpegLoaded = false;
@@ -30,7 +26,9 @@ export default function VideoConverter() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        const checkIsMobile = () => setIsMobile(window.innerWidth <= 480);
+        const checkIsMobile = () => {
+            setIsMobile(window.innerWidth <= 480);
+        };
         checkIsMobile();
         window.addEventListener('resize', checkIsMobile);
         return () => window.removeEventListener('resize', checkIsMobile);
@@ -39,18 +37,22 @@ export default function VideoConverter() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
         if (file.size > 10 * 1024 * 1024) {
             setError('File size exceeds 10MB limit');
             return;
         }
 
         const fileExt = file.name.split('.').pop()?.toLowerCase();
-        if (!fileExt || !['mp4', 'webm'].includes(fileExt)) {
+        let newOutputFormat = '';
+
+        if (fileExt === 'mp4') newOutputFormat = 'webm';
+        else if (fileExt === 'webm') newOutputFormat = 'mp4';
+        else {
             setError('Only MP4 and WebM files are supported');
             return;
         }
 
-        const newOutputFormat = fileExt === 'mp4' ? 'webm' : 'mp4';
         setInputFile(file);
         setOutputFormat(newOutputFormat);
         setError('');
@@ -79,13 +81,15 @@ export default function VideoConverter() {
 
             ffmpeg.FS('writeFile', inputFileName, await fetchFile(inputFile));
 
-            let args: string[] = ['-threads', '4']; // Explicitly define threading where supported
-
-            args.push('-i', inputFileName);
+            const args: string[] = [];
 
             if (outputFormat === 'webm') {
-                args.push('-c:v', 'vp8');
-                includeAudio ? args.push('-c:a', 'libvorbis') : args.push('-an');
+                args.push('-i', inputFileName, '-c:v', 'vp8');
+                if (includeAudio) {
+                    args.push('-c:a', 'libvorbis');
+                } else {
+                    args.push('-an');
+                }
 
                 switch (optimizationOption) {
                     case 'fps':
@@ -99,14 +103,20 @@ export default function VideoConverter() {
                         break;
                     case 'size':
                         args.push('-crf', '40', '-b:v', '0', '-r', '15');
-                        if (includeAudio) args.push('-b:a', '64k');
+                        if (includeAudio) {
+                            args.push('-b:a', '64k');
+                        }
                         break;
                     default:
                         args.push('-crf', '30', '-b:v', '0');
                 }
             } else {
-                args.push('-c:v', 'h264');
-                includeAudio ? args.push('-c:a', 'aac') : args.push('-an');
+                args.push('-i', inputFileName, '-c:v', 'h264');
+                if (includeAudio) {
+                    args.push('-c:a', 'aac');
+                } else {
+                    args.push('-an');
+                }
 
                 switch (optimizationOption) {
                     case 'fps':
@@ -120,7 +130,9 @@ export default function VideoConverter() {
                         break;
                     case 'size':
                         args.push('-crf', '35', '-preset', 'fast', '-r', '15');
-                        if (includeAudio) args.push('-b:a', '64k');
+                        if (includeAudio) {
+                            args.push('-b:a', '64k');
+                        }
                         break;
                     default:
                         args.push('-crf', '23', '-preset', 'fast');
@@ -129,13 +141,16 @@ export default function VideoConverter() {
 
             args.push(outputFileName);
 
-            ffmpeg.setProgress(({ ratio }) => setProgress(Math.round(ratio * 100)));
+            ffmpeg.setProgress(({ ratio }) => {
+                setProgress(Math.round(ratio * 100));
+            });
 
             await ffmpeg.run(...args);
 
             const data = ffmpeg.FS('readFile', outputFileName);
             const blob = new Blob([new Uint8Array(data.buffer)], { type: `video/${outputFormat}` });
             const url = URL.createObjectURL(blob);
+
             setOutputUrl(url);
             setProgress(100);
         } catch (err) {
@@ -173,7 +188,6 @@ export default function VideoConverter() {
                 marginRight: 'auto',
             }}
         >
-            <div className="postInfo" />
             <blockquote className="postMessage">
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <label htmlFor="videoFile" style={{ marginBottom: '5px', fontWeight: 'bold' }}>
@@ -198,7 +212,11 @@ export default function VideoConverter() {
 
                     <div style={{ marginTop: '10px' }}>
                         <label>
-                            <input type="checkbox" checked={includeAudio} onChange={() => setIncludeAudio(!includeAudio)} />
+                            <input
+                                type="checkbox"
+                                checked={includeAudio}
+                                onChange={() => setIncludeAudio(!includeAudio)}
+                            />
                             &nbsp;Include audio in output
                         </label>
                     </div>
@@ -219,7 +237,7 @@ export default function VideoConverter() {
                                         opt === 'fps' ? 'Limit FPS (15)' :
                                             opt === 'length' ? 'Limit to 30 seconds' :
                                                 opt === 'quality' ? 'Lower quality (CRF)' :
-                                                    'Fit under 4MB'}
+                                                    opt === 'size' ? 'Fit under 4MB' : opt}
                                 </label>
                             </div>
                         ))}
