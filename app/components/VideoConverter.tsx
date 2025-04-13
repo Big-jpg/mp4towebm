@@ -3,9 +3,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
+const supportsSAB = typeof window !== 'undefined' && typeof SharedArrayBuffer !== 'undefined';
+
 const ffmpeg = createFFmpeg({
     log: true,
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
+    corePath: supportsSAB
+        ? 'https://unpkg.com/@ffmpeg/core-mt@0.11.1/dist/ffmpeg-core.js'
+        : 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
 });
 
 let ffmpegLoaded = false;
@@ -26,9 +30,7 @@ export default function VideoConverter() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        const checkIsMobile = () => {
-            setIsMobile(window.innerWidth <= 480);
-        };
+        const checkIsMobile = () => setIsMobile(window.innerWidth <= 480);
         checkIsMobile();
         window.addEventListener('resize', checkIsMobile);
         return () => window.removeEventListener('resize', checkIsMobile);
@@ -37,22 +39,18 @@ export default function VideoConverter() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
         if (file.size > 10 * 1024 * 1024) {
             setError('File size exceeds 10MB limit');
             return;
         }
 
         const fileExt = file.name.split('.').pop()?.toLowerCase();
-        let newOutputFormat = '';
-
-        if (fileExt === 'mp4') newOutputFormat = 'webm';
-        else if (fileExt === 'webm') newOutputFormat = 'mp4';
-        else {
+        if (!fileExt || !['mp4', 'webm'].includes(fileExt)) {
             setError('Only MP4 and WebM files are supported');
             return;
         }
 
+        const newOutputFormat = fileExt === 'mp4' ? 'webm' : 'mp4';
         setInputFile(file);
         setOutputFormat(newOutputFormat);
         setError('');
@@ -76,18 +74,18 @@ export default function VideoConverter() {
 
             const fileExt = inputFile.name.split('.').pop()?.toLowerCase();
             const fileName = inputFile.name.replace(`.${fileExt}`, '');
-
             const inputFileName = `input.${fileExt}`;
             const outputFileName = `${fileName}.${outputFormat}`;
 
             ffmpeg.FS('writeFile', inputFileName, await fetchFile(inputFile));
 
-            let args: string[];
+            let args: string[] = ['-threads', '4']; // Explicitly define threading where supported
+
+            args.push('-i', inputFileName);
 
             if (outputFormat === 'webm') {
-                args = ['-i', inputFileName, '-c:v', 'vp8'];
-                if (includeAudio) args.push('-c:a', 'libvorbis');
-                else args.push('-an');
+                args.push('-c:v', 'vp8');
+                includeAudio ? args.push('-c:a', 'libvorbis') : args.push('-an');
 
                 switch (optimizationOption) {
                     case 'fps':
@@ -107,9 +105,8 @@ export default function VideoConverter() {
                         args.push('-crf', '30', '-b:v', '0');
                 }
             } else {
-                args = ['-i', inputFileName, '-c:v', 'h264'];
-                if (includeAudio) args.push('-c:a', 'aac');
-                else args.push('-an');
+                args.push('-c:v', 'h264');
+                includeAudio ? args.push('-c:a', 'aac') : args.push('-an');
 
                 switch (optimizationOption) {
                     case 'fps':
@@ -132,17 +129,13 @@ export default function VideoConverter() {
 
             args.push(outputFileName);
 
-            ffmpeg.setProgress(({ ratio }) => {
-                setProgress(Math.round(ratio * 100));
-            });
+            ffmpeg.setProgress(({ ratio }) => setProgress(Math.round(ratio * 100)));
 
             await ffmpeg.run(...args);
 
             const data = ffmpeg.FS('readFile', outputFileName);
-            const buffer = data.buffer instanceof ArrayBuffer ? data.buffer : new ArrayBuffer(data.buffer.byteLength);
-            const blob = new Blob([buffer], { type: `video/${outputFormat}` });
+            const blob = new Blob([new Uint8Array(data.buffer)], { type: `video/${outputFormat}` });
             const url = URL.createObjectURL(blob);
-
             setOutputUrl(url);
             setProgress(100);
         } catch (err) {
@@ -199,54 +192,48 @@ export default function VideoConverter() {
             </blockquote>
 
             {inputFile && (
-                <>
-                    <blockquote className="postMessage">
-                        <div><b>Selected file:</b> <span className="fileText">{inputFile.name}</span></div>
-                        <div><b>Will convert to:</b> <span className="fileText">{outputFormat.toUpperCase()}</span></div>
+                <blockquote className="postMessage">
+                    <div><b>Selected file:</b> <span className="fileText">{inputFile.name}</span></div>
+                    <div><b>Will convert to:</b> <span className="fileText">{outputFormat.toUpperCase()}</span></div>
 
-                        <div style={{ marginTop: '10px' }}>
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={includeAudio}
-                                    onChange={() => setIncludeAudio(!includeAudio)}
-                                />
-                                &nbsp;Include audio in output
-                            </label>
-                        </div>
+                    <div style={{ marginTop: '10px' }}>
+                        <label>
+                            <input type="checkbox" checked={includeAudio} onChange={() => setIncludeAudio(!includeAudio)} />
+                            &nbsp;Include audio in output
+                        </label>
+                    </div>
 
-                        <div style={{ marginTop: '10px' }}>
-                            <b>Optimization options:</b><br />
-                            {['none', 'fps', 'length', 'quality', 'size'].map((opt) => (
-                                <div key={opt}>
-                                    <label>
-                                        <input
-                                            type="radio"
-                                            name="optimization"
-                                            value={opt}
-                                            checked={optimizationOption === opt}
-                                            onChange={() => setOptimizationOption(opt)}
-                                        />
-                                        &nbsp;{opt === 'none' ? 'Do not alter output' :
-                                            opt === 'fps' ? 'Limit FPS (15)' :
-                                                opt === 'length' ? 'Limit to 30 seconds' :
-                                                    opt === 'quality' ? 'Lower quality (CRF)' :
-                                                        opt === 'size' ? 'Fit under 4MB' : opt}
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
+                    <div style={{ marginTop: '10px' }}>
+                        <b>Optimization options:</b><br />
+                        {['none', 'fps', 'length', 'quality', 'size'].map((opt) => (
+                            <div key={opt}>
+                                <label>
+                                    <input
+                                        type="radio"
+                                        name="optimization"
+                                        value={opt}
+                                        checked={optimizationOption === opt}
+                                        onChange={() => setOptimizationOption(opt)}
+                                    />
+                                    &nbsp;{opt === 'none' ? 'Do not alter output' :
+                                        opt === 'fps' ? 'Limit FPS (15)' :
+                                            opt === 'length' ? 'Limit to 30 seconds' :
+                                                opt === 'quality' ? 'Lower quality (CRF)' :
+                                                    'Fit under 4MB'}
+                                </label>
+                            </div>
+                        ))}
+                    </div>
 
-                        <button
-                            onClick={convertVideo}
-                            disabled={isConverting || isLoading}
-                            className="button"
-                            style={{ marginTop: '10px' }}
-                        >
-                            {isLoading ? 'Loading FFmpeg...' : isConverting ? 'Converting...' : 'Convert'}
-                        </button>
-                    </blockquote>
-                </>
+                    <button
+                        onClick={convertVideo}
+                        disabled={isConverting || isLoading}
+                        className="button"
+                        style={{ marginTop: '10px' }}
+                    >
+                        {isLoading ? 'Loading FFmpeg...' : isConverting ? 'Converting...' : 'Convert'}
+                    </button>
+                </blockquote>
             )}
 
             {(isConverting || isLoading) && (
@@ -283,22 +270,21 @@ export default function VideoConverter() {
                 </blockquote>
             )}
 
-            {/* Style definitions inline (or move to a CSS file/module) */}
             <style jsx>{`
-                .desktop-style {
-                padding: 10px;
-                font-size: 10pt;
-                }
+            .desktop-style {
+            padding: 10px;
+            font-size: 10pt;
+            }
 
-                .mobile-style {
-                padding: 20px;
-                font-size: 11pt;
-                }
+            .mobile-style {
+            padding: 20px;
+            font-size: 11pt;
+            }
 
-                .desktop-style, .mobile-style {
-                transition: padding 0.3s ease, font-size 0.3s ease;
-                }
-            `}</style>
+            .desktop-style, .mobile-style {
+            transition: padding 0.3s ease, font-size 0.3s ease;
+            }
+        `}</style>
         </div>
     );
 }
