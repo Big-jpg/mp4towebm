@@ -1,8 +1,16 @@
 {
     "headers": [
         {
-            "source": "/(esm|umd)/(.*)",
+            "source": "/umd/(.*\\.wasm)",
             "headers": [
+                {
+                    "key": "Content-Encoding",
+                    "value": ""
+                },
+                {
+                    "key": "Content-Type",
+                    "value": "application/wasm"
+                },
                 {
                     "key": "Cross-Origin-Embedder-Policy",
                     "value": "require-corp"
@@ -14,20 +22,15 @@
             ]
         },
         {
-            "source": "/ffmpeg-core/(.*).wasm",
+            "source": "/umd/(.*)",
             "headers": [
                 {
-                    "key": "Content-Type",
-                    "value": "application/wasm"
-                }
-            ]
-        },
-        {
-            "source": "/ffmpeg-core/(.*).worker.js",
-            "headers": [
+                    "key": "Cross-Origin-Embedder-Policy",
+                    "value": "require-corp"
+                },
                 {
-                    "key": "Content-Type",
-                    "value": "application/javascript"
+                    "key": "Cross-Origin-Opener-Policy",
+                    "value": "same-origin"
                 }
             ]
         }
