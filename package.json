@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@ffmpeg/core": "^0.10.0",
-    "@ffmpeg/ffmpeg": "^0.10.1",
+    "@ffmpeg/core-mt": "^0.12.1",
+    "@ffmpeg/ffmpeg": "^0.11.6",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "next": "15.1.6",
