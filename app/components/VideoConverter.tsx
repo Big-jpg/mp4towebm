@@ -5,7 +5,7 @@ import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
 const ffmpeg = createFFmpeg({
     log: true,
-    corePath: '/umd/ffmpeg-core.js',
+    corePath: "/esm/ffmpeg-core.js", // must point to ESM!
 });
 
 let ffmpegLoaded = false;
