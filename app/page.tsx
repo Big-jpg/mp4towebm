@@ -1,5 +1,4 @@
 import VideoConverter from '@/app/components/VideoConverter'
-import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/react"
 import Banner from '@/app/components/Banner'
 import Footer from '@/app/components/Footer'
@@ -12,7 +11,6 @@ export default function Home() {
         < Banner/>
         < VideoConverter/>
         < Analytics/>
-        < SpeedInsights/>
         < Footer/>
       </div>
     </main>
