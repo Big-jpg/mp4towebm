@@ -9,13 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-<<<<<<< HEAD
-    "@ffmpeg/core": "^0.10.0",
-    "@ffmpeg/ffmpeg": "^0.10.1",
-    "@vercel/analytics": "^1.5.0",
-    "next": "^15.3.3",
-=======
->>>>>>> 160d94396677c36872d4dfca725aa04407d86936
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "next": "15.1.6"
