@@ -9,6 +9,13 @@ const ffmpeg = createFFmpeg({
     corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js'
 });
 
+// Use older version of FFMPEG, which is single threaded but doesn't required shader array buffers
+// const ffmpeg = createFFmpeg({
+//     log: true,
+//     corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js'
+//   });
+
+
 let ffmpegLoaded = false;
 
 export default function VideoConverter() {
@@ -19,6 +26,8 @@ export default function VideoConverter() {
     const [outputUrl, setOutputUrl] = useState<string>('');
     const [error, setError] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(false);
+
+    // New state variables for additional options
     const [includeAudio, setIncludeAudio] = useState<boolean>(true);
     const [optimizationOption, setOptimizationOption] = useState<string>('none');
 
@@ -30,9 +39,9 @@ export default function VideoConverter() {
 
         if (!file) return;
 
-        // Check file size (10MB limit)
-        if (file.size > 10 * 1024 * 1024) {
-            setError('File size exceeds 10MB limit');
+        // Check file size (25MB limit)
+        if (file.size > 25 * 1024 * 1024) {
+            setError('File size exceeds 25MB limit');
             return;
         }
 
@@ -45,7 +54,7 @@ export default function VideoConverter() {
         } else if (fileExt === 'webm') {
             newOutputFormat = 'mp4';
         } else {
-            setError('Only MP4 and WebM files newfag');
+            setError('Only MP4 and WebM files are supported');
             return;
         }
 
@@ -92,14 +101,14 @@ export default function VideoConverter() {
                     '-i', inputFileName,
                     '-c:v', 'vp8',  // Use vp8 for better compatibility than vp9
                 ];
-                
+
                 // Handle audio
                 if (includeAudio) {
                     args.push('-c:a', 'libvorbis');
                 } else {
                     args.push('-an');  // No audio
                 }
-                
+
                 // Handle optimization options
                 switch (optimizationOption) {
                     case 'fps':
@@ -107,6 +116,8 @@ export default function VideoConverter() {
                         args.push('-crf', '30', '-b:v', '0');
                         break;
                     case 'length':
+                        // This would require knowing the original length
+                        // For simplicity, we'll just take the first 30 seconds
                         args.push('-t', '30');
                         args.push('-crf', '30', '-b:v', '0');
                         break;
@@ -114,7 +125,9 @@ export default function VideoConverter() {
                         args.push('-crf', '40', '-b:v', '0');  // Lower quality (higher CRF)
                         break;
                     case 'size':
-                        args.push('-crf', '40', '-b:v', '0');  // Lower quality
+                        // For targeting size, we need to use 2-pass encoding
+                        // This is much more complex and might need a different approach
+                        args.push('-crf', '40', '-b:v', '0');  // For now, just use lower quality
                         args.push('-r', '15');  // Lower framerate
                         if (includeAudio) {
                             args.push('-b:a', '64k');  // Lower audio bitrate
@@ -128,14 +141,14 @@ export default function VideoConverter() {
                     '-i', inputFileName,
                     '-c:v', 'h264',
                 ];
-                
+
                 // Handle audio
                 if (includeAudio) {
                     args.push('-c:a', 'aac');
                 } else {
                     args.push('-an');  // No audio
                 }
-                
+
                 // Handle optimization options
                 switch (optimizationOption) {
                     case 'fps':
@@ -143,6 +156,7 @@ export default function VideoConverter() {
                         args.push('-crf', '23', '-preset', 'fast');
                         break;
                     case 'length':
+                        // For simplicity, just take the first 30 seconds
                         args.push('-t', '30');
                         args.push('-crf', '23', '-preset', 'fast');
                         break;
@@ -150,6 +164,7 @@ export default function VideoConverter() {
                         args.push('-crf', '35', '-preset', 'fast');  // Lower quality (higher CRF)
                         break;
                     case 'size':
+                        // For targeting 4MB size, apply multiple constraints
                         args.push('-crf', '35', '-preset', 'fast');  // Lower quality
                         args.push('-r', '15');  // Lower framerate
                         if (includeAudio) {
@@ -219,7 +234,7 @@ export default function VideoConverter() {
         <div className="reply p-2 m-4 border border-[#D9BFB7] bg-[#F0E0D6] max-w-md mx-auto">
             <div className="mb-2">
                 <label htmlFor="videoFile" className="postblock bg-[#EA8] text-[#800] font-bold border border-[#800] px-2 py-0 text-[10pt]">
-                    Select MP4 or WebM file (Max 10MB)
+                    Select MP4 or WebM file (Max 25MB)
                 </label>
                 <input
                     type="file"
@@ -239,12 +254,12 @@ export default function VideoConverter() {
                     <p className="text-[10pt] font-arial mb-2">
                         <span className="font-bold">Will convert to:</span> {outputFormat.toUpperCase()}
                     </p>
-                    
+
                     {/* Audio toggle */}
                     <div className="mb-2">
                         <label className="flex items-center">
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 checked={includeAudio}
                                 onChange={() => setIncludeAudio(!includeAudio)}
                                 className="mr-2"
