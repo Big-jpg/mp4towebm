@@ -39,9 +39,9 @@ export default function VideoConverter() {
 
         if (!file) return;
 
-        // Check file size (25MB limit)
-        if (file.size > 25 * 1024 * 1024) {
-            setError('File size exceeds 25MB limit');
+        // Check file size (10MB limit)
+        if (file.size > 10 * 1024 * 1024) {
+            setError('File size exceeds 10MB limit');
             return;
         }
 
@@ -234,7 +234,7 @@ export default function VideoConverter() {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-md mx-auto">
             <div className="mb-6">
                 <label htmlFor="videoFile" className="block text-sm font-medium mb-2">
-                    Select MP4 or WebM file (Max 25MB)
+                    Select MP4 or WebM file (Max 10MB)
                 </label>
                 <input
                     type="file"
