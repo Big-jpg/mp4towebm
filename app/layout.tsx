@@ -1,22 +1,19 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
+import './globals.css'; 
 
-const inter = Inter({ subsets: ['latin'] })
-
-export const metadata: Metadata = {
-  title: 'Video Converter',
-  description: 'Convert between MP4 and WebM video formats',
+export const metadata = {
+  title: '/vr/ - Video Retarder',
+  description: 'Convert MP4 ⇄ WebM under 4MB',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <head>
+        <meta name="theme-color" content="#FFFFEE" />
+      </head>
+      <body>
+        {children}
+      </body>
     </html>
   )
 }
