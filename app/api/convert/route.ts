@@ -13,9 +13,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Note: We're not actually using server-side conversion
-        // This is just a placeholder for potential future server-side implementation
-
         return NextResponse.json(
             { message: 'Server-side conversion is not implemented yet' },
             { status: 501 }
